@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "RobustPlus"
 include ':app'
 include ':autopatchbase'
+include ':patch'
