@@ -3,12 +3,20 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+
+        maven { url "https://jitpack.io" }
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
+        mavenCentral()
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        mavenCentral()
+        
+        maven { url "https://jitpack.io" }
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
         mavenCentral()
     }
 }
@@ -18,6 +26,4 @@ include ':app'
 include ':autopatchbase'
 include ':patch'
 include ':auto-patch-plugin'
-
-//include ':gradle-plugin'
-
+include ':gradle-plugin'
