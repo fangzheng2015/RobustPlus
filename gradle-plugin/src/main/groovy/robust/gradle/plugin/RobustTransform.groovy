@@ -1,7 +1,5 @@
 package robust.gradle.plugin
 
-import com.android.build.api.transform.*
-//import com.android.build.gradle.internal.pipeline.TransformManager
 import com.meituan.robust.Constants
 import javassist.ClassPool
 import org.gradle.api.Plugin
@@ -11,6 +9,7 @@ import robust.gradle.plugin.asm.AsmInsertImpl
 import robust.gradle.plugin.javaassist.JavaAssistInsertImpl
 
 import java.util.zip.GZIPOutputStream
+
 /**
  * Created by mivanzhang on 16/11/3.
  *
@@ -18,7 +17,7 @@ import java.util.zip.GZIPOutputStream
  *
  */
 
-class RobustTransform extends Transform implements Plugin<Project> {
+class RobustTransform implements Plugin<Project> {
     Project project
     static Logger logger
     private static List<String> hotfixPackageList = new ArrayList<>();
@@ -27,9 +26,7 @@ class RobustTransform extends Transform implements Plugin<Project> {
     private static List<String> exceptMethodList = new ArrayList<>();
     private static boolean isHotfixMethodLevel = false;
     private static boolean isExceptMethodLevel = false;
-//    private static boolean isForceInsert = true;
     private static boolean isForceInsert = false;
-//    private static boolean useASM = false;
     private static boolean useASM = true;
     private static boolean isForceInsertLambda = false;
 
@@ -52,16 +49,19 @@ class RobustTransform extends Transform implements Plugin<Project> {
                 //FIXME: assembleRelease下屏蔽Prepare，这里因为还没有执行Task，没法直接通过当前的BuildType来判断，所以直接分析当前的startParameter中的taskname，
                 //另外这里有一个小坑task的名字不能是缩写必须是全称 例如assembleDebug不能是任何形式的缩写输入
                 if (taskName.endsWith("Debug") && taskName.contains("Debug")) {
-//                    logger.warn " Don't register robust transform for debug model !!! task is：${taskName}"
+                    logger.warn " Don't register robust transform for debug model !!! task is：${taskName}"
                     isDebugTask = true
                     break;
                 }
             }
             if (!isDebugTask) {
+
                 project.android.registerTransform(this)
+
                 project.afterEvaluate(new RobustApkHashAction())
                 logger.quiet "Register robust transform successful !!!"
             }
+            robust.switch.turnOnRobust
             if (null != robust.switch.turnOnRobust && !"true".equals(String.valueOf(robust.switch.turnOnRobust))) {
                 return;
             }
@@ -98,7 +98,7 @@ class RobustTransform extends Transform implements Plugin<Project> {
 
         if (null != robust.switch.useAsm && "false".equals(String.valueOf(robust.switch.useAsm.text()))) {
             useASM = false;
-        }else {
+        } else {
             //默认使用asm
             useASM = true;
         }
@@ -118,23 +118,12 @@ class RobustTransform extends Transform implements Plugin<Project> {
             isForceInsertLambda = false;
     }
 
-    @Override
-    String getName() {
+    static String getName() {
         return "robust"
     }
 
-    @Override
-    Set<QualifiedContent.ContentType> getInputTypes() {
-        return TransformManager.CONTENT_CLASS
-    }
 
-    @Override
-    Set<QualifiedContent.Scope> getScopes() {
-        return TransformManager.SCOPE_FULL_PROJECT
-    }
-
-    @Override
-    boolean isIncremental() {
+    static boolean isIncremental() {
         return false
     }
 
@@ -146,17 +135,22 @@ class RobustTransform extends Transform implements Plugin<Project> {
         outputProvider.deleteAll()
         File jarFile = outputProvider.getContentLocation("main", getOutputTypes(), getScopes(),
                 Format.JAR);
-        if(!jarFile.getParentFile().exists()){
+        if (!jarFile.getParentFile().exists()) {
             jarFile.getParentFile().mkdirs();
         }
-        if(jarFile.exists()){
+        if (jarFile.exists()) {
             jarFile.delete();
         }
 
         ClassPool classPool = new ClassPool()
+
+
+
         project.android.bootClasspath.each {
             classPool.appendClassPath((String) it.absolutePath)
         }
+
+
 
         def box = ConvertUtils.toCtClasses(inputs, classPool)
         def cost = (System.currentTimeMillis() - startTime) / 1000
@@ -184,7 +178,7 @@ class RobustTransform extends Transform implements Plugin<Project> {
     private void writeMap2File(Map map, String path) {
         File file = new File(project.buildDir.path + path);
         if (!file.exists() && (!file.parentFile.mkdirs() || !file.createNewFile())) {
-//            logger.error(path + " file create error!!")
+           logger.error(path + " file create error!!")
         }
         FileOutputStream fileOut = new FileOutputStream(file);
 
@@ -199,7 +193,6 @@ class RobustTransform extends Transform implements Plugin<Project> {
         gzip.close();
         fileOut.flush()
         fileOut.close()
-
     }
 
 }

@@ -1,3 +1,7 @@
+import com.android.build.api.artifact.MultipleArtifact
+import javassist.ClassPool
+import javassist.CtClass
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -95,4 +99,30 @@ dependencies {
     api project(':patch')
 
     //implementation 'com.wutong.robust:robust:0.4.100.1'
+}
+
+abstract class AddClassesTask extends DefaultTask {
+
+    @OutputFiles
+    abstract DirectoryProperty getOutput();
+
+    @TaskAction
+    void taskAction() {
+        ClassPool pool = new ClassPool(ClassPool.getDefault());
+        CtClass interfaceClass = pool.makeInterface("com.funder.robustplus.AnyInterface");
+        System.out.println("Adding $interfaceClass");
+        interfaceClass.writeFile(output.get().asFile.absolutePath);
+    }
+}
+
+androidComponents {
+    onVariants(selector().all(), { variant ->
+        TaskProvider<AddClassesTask> taskProvider = project.tasks.register(variant.getName() + "AddAllClasses", AddClassesTask.class)
+
+        variant
+
+//        variant.artifacts.use(taskProvider)
+//                .wiredWith( { it.getOutput() })
+//                .toAppendTo(MultipleArtifact.ALL_CLASSES_DIRS.INSTANCE)
+    })
 }
